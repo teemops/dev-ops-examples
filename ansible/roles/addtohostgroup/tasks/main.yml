@@ -1,0 +1,4 @@
+---
+
+- name: add single ec2 instance to a host group only
+  add_host: hostname={{ ip_to_add }} groupname={{ group_to_add }}

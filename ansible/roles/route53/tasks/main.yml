@@ -1,0 +1,12 @@
+---
+#this role adds a route53 record
+
+- name: adding A record to route53
+  route53:
+    command: create
+    zone: "{{ dnszone }}"
+    record: "{{ instance_name_tag }}"
+    type: A
+    ttl: 300
+    overwrite: yes
+    value: "{{ ec2.tagged_instances.0.private_ip }}"

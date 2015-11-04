@@ -1,0 +1,15 @@
+---
+# Node Deployment 
+# GIT stuff
+- name: Install git
+  apt: pkg=git state=present
+
+- apt: update_cache=yes
+
+# NGINX/NODE
+- name: Install NGINX and NODE
+  apt: pkg={{item}} state=present
+  with_items:
+      - nginx
+      - nodejs
+      - npm

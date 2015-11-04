@@ -1,0 +1,12 @@
+---
+
+# This playbook deploys the entire Web/HHVM stack
+- name: apply common configuration to all nodes
+  hosts: all
+  user: ubuntu
+
+  roles:
+    - ssh
+    - php56
+    - code
+    - app_coreapi

@@ -1,0 +1,88 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+  
+  "Description" : "AWS CloudFormation ElastiCache_Redis base template.",
+  
+  "Parameters" : {
+
+    "ClusterNodeType" : {
+      "Description" : "The compute and memory capacity of the nodes in the Redis Cluster",
+      "Type" : "String",
+      "Default" : "cache.m1.small",
+      "AllowedValues" : [ "cache.m1.small", "cache.m1.large", "cache.m1.xlarge", "cache.m2.xlarge", "cache.m2.2xlarge", "cache.m2.4xlarge", "cache.c1.xlarge" ]
+,
+      "ConstraintDescription" : "must select a valid Cache Node type."
+    },
+    "Environment": {
+        "Type": "String",
+        "Description": "What type of environment do you want to create (dev is only 1 instance - prod is HA)?",
+        "AllowedValues": [
+            "development",
+            "production"
+        ],
+        "Default": "development"
+    },
+    "ExistingRedisSecurityGroup": {
+        "Type": "AWS::EC2::SecurityGroup::Id",
+        "Description": "ID of an existing security group for Elasticache Redis Instance"
+    }
+  },
+  "Mappings": {
+        "RegionImageData": {
+            "ap-northeast-1"    : { "Ubuntu1404LTS64" : "ami-d4c807d4" },
+            "ap-southeast-1"    : { "Ubuntu1404LTS64" : "ami-84f0cfd6" },
+            "eu-central-1"      : { "Ubuntu1404LTS64" : "ami-48c5fa55" },
+            "eu-west-1"         : { "Ubuntu1404LTS64" : "ami-b97a12ce" },
+            "sa-east-1"         : { "Ubuntu1404LTS64" : "ami-65991e78" },
+            "us-east-1"         : { "Ubuntu1404LTS64" : "ami-76b2a71e" },
+            "us-west-1"         : { "Ubuntu1404LTS64" : "ami-af7f90eb" },
+            "ap-southeast-2"    : { "Ubuntu1404LTS64" : "ami-af027d95" },
+            "us-west-2"         : { "Ubuntu1404LTS64" : "ami-5189a661" }
+        }
+  },
+ "Conditions": {
+    "IsProductionEnvironment": {
+        "Fn::Equals": [
+            {
+                "Ref": "Environment"
+            },
+            "production"
+        ]
+    }
+  },
+  "Resources" : {
+    "RedisCluster" : {
+      "Type": "AWS::ElastiCache::CacheCluster",
+      "Properties": {
+        "CacheNodeType"           : { "Ref" : "ClusterNodeType" },
+        "VpcSecurityGroupIds" : [{"Ref":"ExistingRedisSecurityGroup"}],
+        "Engine"                  : "redis",
+        "NumCacheNodes"           : 1,
+        "SnapshotRetentionLimit"  : {
+            "Fn::If": [
+                "IsProductionEnvironment",
+                10,
+                1
+            ]
+        },
+        "SnapshotWindow"        : "05:00-09:00",
+        "CacheSubnetGroupName" : "prod-redis"
+      }
+    },
+    "RedisReplicationGroup" : {
+        "Type" : "AWS::ElastiCache::ReplicationGroup",
+        "Condition": "IsProductionEnvironment",
+        "Properties" : {
+          "AutomaticFailoverEnabled" : true,
+          "CacheNodeType" : { "Ref" : "ClusterNodeType" },
+          "Engine" : "redis",
+          "NumCacheClusters" : 2,
+          "PreferredCacheClusterAZs" : [ "us-west-2a", "us-west-2b" ],
+          "PreferredMaintenanceWindow" : "05:00-09:00",
+          "ReplicationGroupDescription" : "Redis Production Replica Nodes",
+          "SecurityGroupIds" : [{"Ref":"ExistingRedisSecurityGroup"}],
+          "SnapshotWindow" : "05:00-09:00"
+        }
+    }
+  }
+}

@@ -1,0 +1,9 @@
+[all]
+localhost
+
+[www]
+
+[www:vars]
+ansible_connection=ssh
+ansible_ssh_user=ubuntu
+ansible_ssh_private_key_file=~/.ssh/kiwifellows.pem

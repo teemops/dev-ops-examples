@@ -1,0 +1,186 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "AWS CloudFormation stack. Purpose: EC2 Environment. Spins up an EC2 server in the AWS environment. Can be run by itself or as a nested stack.",
+    "Parameters": {
+        "InstanceType": {
+            "Description": "EC2 instance type.",
+            "Type": "String",
+            "Default": "t2.micro",
+            "AllowedValues": [
+                "t2.micro",
+                "t2.small",
+                "t2.medium",
+                "t2.large",
+                "m3.medium",
+                "m3.large",
+                "m3.xlarge",
+                "m3.2xlarge"
+            ]
+        },
+        "AvailabilityZoneId": {
+            "Type": "String",
+            "Description": "Which AZ to launch in (only applies to development)?",
+            "Default": "us-west-2a"
+        },
+        "KeyPairName": {
+            "Description": "Name of an existing EC2 key pair for SSH access to the EC2 instance.",
+            "Type": "AWS::EC2::KeyPair::KeyName"
+        },
+        "EC2Subnet": {
+            "Description": "Name of an existing EC2 Subnet",
+            "Type": "AWS::EC2::Subnet::Id"
+        },
+        "ExistingSecurityGroup": {
+            "Type": "AWS::EC2::SecurityGroup::Id",
+            "Description": "ID of an existing security group for web server"
+        },
+        "GitRepository": {
+            "Type": "String",
+            "Description": "Your GIT Repository?",
+            "Default": "github.com/teemops/dev-ops-examples.git"
+
+        },
+        "AnsibleBuildPath": {
+            "Type": "String",
+            "Description": "Ansible Playbook (Will run given ansible playbook/yml file in ansible folder pulled from GIT repo)",
+            "Default": "php"
+        }
+    },
+    "Mappings" : {
+        "RegionSpecificData": {
+            "ap-northeast-1"    : { "Ubuntu1404LTS64" : "ami-d4c807d4" },
+            "ap-southeast-1"    : { "Ubuntu1404LTS64" : "ami-84f0cfd6" },
+            "eu-central-1"      : { "Ubuntu1404LTS64" : "ami-48c5fa55" },
+            "eu-west-1"         : { "Ubuntu1404LTS64" : "ami-b97a12ce" },
+            "sa-east-1"         : { "Ubuntu1404LTS64" : "ami-65991e78" },
+            "us-east-1"         : { "Ubuntu1404LTS64" : "ami-76b2a71e" },
+            "us-west-1"         : { "Ubuntu1404LTS64" : "ami-af7f90eb" },
+            "ap-southeast-2"    : { "Ubuntu1404LTS64" : "ami-af027d95" },
+            "us-west-2"         : { "Ubuntu1404LTS64" : "ami-5189a661" }
+        }
+    },
+    "Resources": {
+        "DevEC2Instance": {
+            "Type": "AWS::EC2::Instance",
+            "Metadata": {
+                "AWS::CloudFormation::Init": {
+                    "config": {
+                        "packages": {
+                        },
+                        "groups": {
+
+                        },
+                        "users": {
+
+                        },
+                        "sources": {
+
+                        },
+                        "files": {
+                           
+                        },
+                        "commands": {
+
+                        },
+                        "services": {
+
+                        }
+                    }
+                }
+            },
+            "Properties": {
+                "Tags" : [ { "Key" : "Name", "Value" : "teemops-example" } ],
+                "InstanceType": {
+                    "Ref": "InstanceType"
+                },
+                "KeyName": {
+                    "Ref": "KeyPairName"
+                },
+                "ImageId": {
+                    "Fn::FindInMap": [
+                        "RegionSpecificData",
+                        {
+                            "Ref": "AWS::Region"
+                        },
+                        "Ubuntu1404LTS64"
+                    ]
+                },
+                "NetworkInterfaces" : [{
+                    "GroupSet"                 : [{ "Ref" : "ExistingSecurityGroup" }],
+                    "AssociatePublicIpAddress" : "true",
+                    "DeviceIndex"              : "0",
+                    "DeleteOnTermination"      : "true",
+                    "SubnetId"                 : { "Ref" : "EC2Subnet" }
+                }],
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "\n",
+                            [
+                                "#!/bin/bash",
+                                "apt-get install software-properties-common -y --force-yes",
+                                "apt-get update",
+                                "apt-get install automake autoconf libtool gcc -y --force-yes",
+                                "apt-get install git -y --force-yes",
+                                "apt-get install python-setuptools  -y --force-yes",
+                                "apt-get install python-dev -y --force-yes",
+                                "easy_install pip",
+                                "pip install ansible",
+                                "pip install paramiko PyYAML Jinja2 httplib2 six",
+                                {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            "git clone https://",
+                                            { "Ref" : "GitRepository"},
+                                            " /var/playbooks/runlocal"
+                                        ]
+                                    ]
+                                },
+                                {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            "ansible-playbook -i /var/playbooks/runlocal/ansible/",
+                                            " /var/playbooks/runlocal/ansible/",
+                                            { "Ref" : "AnsibleBuildPath" },
+                                            ".yml --connection=local"
+                                        ]
+                                    ]
+                                },
+                            ]
+                        ]
+                    }
+                }
+            }
+        }
+    },
+    "Outputs": {
+        "PublicDNSName": {
+            "Description": "Public DNS name of the new EC2 instance",
+            "Value": {
+                "Fn::GetAtt": [
+                    "DevEC2Instance",
+                    "PublicDnsName"
+                ]
+            }
+        },
+        "PublicIPAddress": {
+            "Description": "Public IP address of the new EC2 instance",
+            "Value": {
+                "Fn::GetAtt": [
+                    "DevEC2Instance",
+                    "PublicIp"
+                ]
+            }
+        },
+        "WebsiteURL" : {
+            "Value" : { "Fn::Join" : ["", ["http://", { "Fn::GetAtt" : [ "DevEC2Instance", "PublicDnsName" ]}]] },
+            "Description" : "URL for newly created application"
+        },
+        "QuickSSH" : {
+            "Value" : { "Fn::Join" : ["", ["ubuntu@", { "Fn::GetAtt" : [ "DevEC2Instance", "PublicIp" ]}]] },
+            "Description" : "SSH quick ip"
+    }
+    }
+}

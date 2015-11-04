@@ -1,0 +1,54 @@
+---
+- name: Launch ec2 instance
+  ec2:
+    vpc_subnet_id: "{{ vpc_subnet_id }}"
+    key_name: "{{ key_name }}"
+    group_id: "{{ security_group_ids }}"
+    instance_type: "{{ instance_type }}"
+    image: "{{ ami }}"
+    region: "{{ region }}"
+    volumes: "{{ ec2_volumes }}"
+    assign_public_ip: "{{ assign_public_ip }}"
+    #instance_profile_name: "{{ instance_profile_name }}"
+    wait: true
+    instance_tags: "{{ec2_instance_tags}}"
+    count_tag:
+      Name: "{{ ec2_instance_tags.Name }}"
+    exact_count: 1
+    #user_data: "{{bootstrap_script_contents}}"
+  register: ec2
+  tags:
+    - ec2
+
+- name: associate new EIP for the instance
+  ec2_eip:
+    region: "{{ region }}"
+    instance_id: "{{ item.id }}"
+  with_items: ec2.instances
+  when: assign_eip
+  register: eip
+  tags:
+    - ec2
+
+- name: Allocate an EIP
+  debug: msg="Allocated IP is {{eip}}"
+  tags:
+    - ec2
+
+- name: add instance(s) to a host group
+  add_host: hostname={{ item.public_ip }} groupname={{ instance_group_name }}
+  with_items: ec2.tagged_instances
+  tags:
+    - ec2
+
+- debug: var=ec2.tagged_instances
+
+- debug: var=ec2.tagged_instances[0].tags.Name
+
+- name: wait for SSH to come up
+  wait_for: host={{ item.public_ip }}
+                port=22 delay=10 timeout=180 state=started
+  with_items: ec2.tagged_instances
+  when: islinux
+  tags:
+    - ec2

@@ -1,0 +1,32 @@
+---
+# PHP 5.6 Deployment 
+# GIT stuff
+- name: Install git
+  apt: pkg=git state=present
+
+- command: apt-add-repository ppa:ondrej/php5-5.6
+
+- apt: update_cache=yes
+
+# NGINX
+- name: Install NGINX and PHP
+  apt: pkg=nginx state=present
+
+# PHP-FPM
+- name: Install PHP
+  apt: pkg=php5-fpm state=present
+
+# Setup the PHP and NGINX config
+- name: Create NGINX default configuration
+  template: src=nginx_sites_enabled_default dest=/etc/nginx/sites-available/default mode=744 force=yes
+
+- name: Create PHP.ini PHP-FPM CGI option
+  template: src=php_fpm.ini dest=/etc/php5/fpm/php.ini mode=744 force=yes
+  
+# Restart the PHP and NGINX
+- name: restart services
+  service: name={{item}} state=restarted
+  with_items:
+      - php5-fpm
+      - nginx
+

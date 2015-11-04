@@ -1,0 +1,16 @@
+---
+
+- name: Launch EC2
+  hosts: localhost
+  sudo: false
+  vars_files:
+    - ../../vars/common.yml
+    - ../../vars/customers/teem-dev.yml
+    
+  roles:
+
+    #Dev Build.
+    - { role: ec2, islinux: true, instance_group_name: "www", myec2: "www", ami: "{{ amibase.www }}", ec2_instance_tags: "{{www_instance_tags}}", ec2_volumes: "{{www_volumes}}", bootstrap_script_contents: "{{sitecore_bootstrap}}" }
+    - { role: route53, instance_name_tag:  "{{ www_instance_tags.Name }}" }
+    #add the standalone to sql, authoring and content
+    

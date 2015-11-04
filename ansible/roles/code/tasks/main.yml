@@ -1,0 +1,21 @@
+---
+# Generic App Code deployment
+
+- set_fact:
+     timestamp: "{{ lookup('pipe', 'date +%Y%m%d%H%M%S') }}"
+
+- set_fact:
+     release_path: /var/sites/releases/{{project}}/{{timestamp}}/
+
+# Create release folders for versioning incase a rollback is required for project.
+- name: Create default folder
+  file: dest=/var/sites/releases/{{ project }} owner=www-data group=www-data state=directory
+
+# GIT Code into default directory
+- name: Get GIT latest Source
+  git: >
+    repo={{ repo_url }}/{{ project }}.git
+    dest={{ release_path }}
+    accept_hostkey=yes
+    key_file=~/.ssh/{{ ssh_key }}
+    version=master

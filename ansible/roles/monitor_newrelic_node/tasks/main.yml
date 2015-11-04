@@ -1,0 +1,3 @@
+---
+# New Relic Node Agent Deployment
+- command: npm install newrelic

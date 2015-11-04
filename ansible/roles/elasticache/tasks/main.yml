@@ -1,0 +1,14 @@
+---
+
+#Builds predefined Elasticache cluster using CloudFormation template
+- name: Create the Elasticache cluster using CFN template
+  cloudformation:
+    stack_name: "ElasticacheAnsible"
+    state: "present"
+    region: "us-west-2"
+    template: "files/vendor/aws/cloudformation/build-elasticache-stack.cfn.json"
+    template_parameters:
+      ClusterNodeType: cache.m1.large
+      Environment: dev
+      ExistingRedisSecurityGroup: sg-123456
+  register: elacfn

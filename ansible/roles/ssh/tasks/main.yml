@@ -1,0 +1,23 @@
+---
+# SSH deployment
+- name: Create default ssh directory
+  file: dest=~/.ssh owner=root group=root mode=600 state=directory
+
+# Create SSH keys for git on both root and ubuntu
+- name: Create SSH Config File
+  template: src=config dest=~/.ssh/config  mode=0644
+  
+- name: Create SSH Config File UBUNTU
+  template: src=config dest=/home/ubuntu/.ssh/config  mode=0644 owner=ubuntu
+
+- name: Create Key
+  template: src={{ ssh_key }} dest=~/.ssh/{{ ssh_key }} mode=700
+
+- name: Create Key UBUNTU
+  template: src={{ ssh_key }} dest=/home/ubuntu/.ssh/{{ ssh_key }} mode=700 owner=ubuntu
+
+- name: Create Key Pub file
+  template: src={{ ssh_key }}.pub dest=~/.ssh/{{ ssh_key }}.pub mode=644
+
+- name: Create Key Pub file UBUNTU
+  template: src={{ ssh_key }}.pub dest=/home/ubuntu/.ssh/{{ ssh_key }}.pub mode=644  owner=ubuntu

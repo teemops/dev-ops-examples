@@ -1,0 +1,20 @@
+---
+# Mongo Deployment 
+# GIT stuff
+- name: Install git
+  apt: pkg=git state=present
+
+# Add APT Repo stuff
+- name: Add Keyserver for checking against MONGO
+  apt_key: keyserver=keyserver.ubuntu.com id=7F0CEB10
+
+- name: Create Srcs List File for Mongo
+  template: src=mongodb-org-3.0.list dest=/etc/apt/sources.list.d/mongodb-org-3.0.list  mode=0744
+
+- apt: update_cache=yes
+
+# MONGO
+- name: Install mongodb-org
+  apt: pkg={{item}} state=present
+  with_items:
+      - mongodb-org

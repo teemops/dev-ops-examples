@@ -1,0 +1,27 @@
+---
+# MySQL default stuff
+- name: mysql client
+  apt: pkg=mysql-client-5.6 state=present
+
+
+# MySQL default stuff
+- name: Pre-req python-mysqldb
+  apt: pkg=python-mysqldb state=present
+
+#- name: ensure anonymous users are not in the database
+#  mysql_user: name='' host={{rds_hostname}} state=absent
+  
+#- name: remove the test database
+#  mysql_db: name=test state=absent
+
+- copy: src=schema.sql dest=/tmp
+
+- name: add default database
+  mysql_db: >
+     name={{app_database}}
+     login_host={{rds_hostname}}
+     login_user={{rds_admin_user}}
+     login_password={{rds_admin_pass}}
+     state=import
+     target=/tmp/schema.sql
+     
