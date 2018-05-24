@@ -43,7 +43,7 @@
         "AnsibleBuildPath": {
             "Type": "String",
             "Description": "Ansible Playbook (Will run given ansible playbook/yml file in ansible folder pulled from GIT repo)",
-            "Default": "php"
+            "Default": "local/lamp"
         }
     },
     "Mappings" : {
@@ -141,7 +141,7 @@
                                     "Fn::Join": [
                                         "",
                                         [
-                                            "ansible-playbook -i /var/playbooks/runlocal/ansible/",
+                                            "ansible-playbook -i /var/playbooks/runlocal/ansible/hosts",
                                             " /var/playbooks/runlocal/ansible/",
                                             { "Ref" : "AnsibleBuildPath" },
                                             ".yml --connection=local"
